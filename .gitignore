@@ -1,0 +1,17 @@
+# macOS
+.DS_Store
+
+# Editors/IDEs
+.idea/
+.vscode/
+
+# Go build/test artifacts
+bin/
+dist/
+*.test
+*.out
+coverage.out
+coverage.txt
+
+# Local planning/work artifacts
+.sisyphus/
