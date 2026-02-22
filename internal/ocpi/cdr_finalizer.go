@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ocpi/ocpi/internal/periods"
+	"github.com/jaouadou/ocpi-tariff-module/internal/periods"
 )
 
 type Finalizer struct {

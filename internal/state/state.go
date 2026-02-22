@@ -4,7 +4,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/ocpi/ocpi/internal/breakpoints"
+	"github.com/jaouadou/ocpi-tariff-module/internal/breakpoints"
 )
 
 type State uint8

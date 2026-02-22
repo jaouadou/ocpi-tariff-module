@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ocpi/ocpi/internal/breakpoints"
+	"github.com/jaouadou/ocpi-tariff-module/internal/breakpoints"
 	"github.com/stretchr/testify/require"
 )
 

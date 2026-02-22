@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ocpi/ocpi/internal/periods"
+	"github.com/jaouadou/ocpi-tariff-module/internal/periods"
 	"github.com/stretchr/testify/require"
 )
 

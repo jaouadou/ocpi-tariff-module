@@ -1,4 +1,4 @@
-module github.com/ocpi/ocpi
+module github.com/jaouadou/ocpi-tariff-module
 
 go 1.22
 

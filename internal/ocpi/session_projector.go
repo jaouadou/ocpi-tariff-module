@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"sync"
 
-	"github.com/ocpi/ocpi/internal/periods"
+	"github.com/jaouadou/ocpi-tariff-module/internal/periods"
 )
 
 type SessionProjector struct {

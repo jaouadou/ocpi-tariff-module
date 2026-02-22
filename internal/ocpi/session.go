@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/ocpi/ocpi/internal/periods"
+	"github.com/jaouadou/ocpi-tariff-module/internal/periods"
 )
 
 type Session struct {

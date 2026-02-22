@@ -1,4 +1,6 @@
-# OCPI Segmentation Engine (Go)
+# OCPI Tariff Module: Segmentation Engine
+
+Module path: `github.com/jaouadou/ocpi-tariff-module`
 
 Incremental OCPI 2.2.1 charging-period segmentation engine.
 
@@ -18,7 +20,7 @@ Core pipeline:
 4. Evaluate active tariff elements at interval start (first-match-per-dimension).
 5. Accumulate dimensions and merge adjacent stable intervals.
 
-Main packages:
+Implementation packages:
 
 - `internal/events/` - deterministic event store, dedupe, watermark, quarantine/backpressure
 - `internal/tariffs/` - TariffRestrictions matching and TariffElement selection
@@ -26,6 +28,10 @@ Main packages:
 - `internal/breakpoints/` - interpolation and breakpoint helpers
 - `internal/periods/` - period accumulation and trace mode
 - `internal/ocpi/` - Session PUT projector and sealed CDR finalizer
+
+Public package:
+
+- `pkg/segengine` - stable external API surface
 
 ## Spec Decisions
 
@@ -42,24 +48,48 @@ Main packages:
 
 ## Usage
 
-Primary entrypoints:
+Primary entrypoints (public):
 
-- `internal/periods.Accumulate(...)`
-- `internal/periods.AccumulateWithTrace(...)`
-- `internal/ocpi.(*SessionProjector).Emit(...)`
-- `internal/ocpi.(*Finalizer).TryFinalize(...)`
+- `segengine.Accumulate(...)`
+- `segengine.AccumulateWithTrace(...)`
+- `segengine.NewSessionProjector(...)`
+- `segengine.NewFinalizer()`
+
+Import:
+
+```go
+import segengine "github.com/jaouadou/ocpi-tariff-module/pkg/segengine"
+```
 
 Typical flow:
 
 1. Build tariff and telemetry slices.
 2. Compute calendar boundaries and energy thresholds.
-3. Call `periods.Accumulate(...)`.
+3. Call `segengine.Accumulate(...)`.
 4. Optionally project Session updates and finalize CDR when watermark passes session end.
 
 Trace mode:
 
-- Pass `trace := &periods.Trace{}` into `AccumulateWithTrace`.
+- Pass `trace := &segengine.Trace{}` into `AccumulateWithTrace`.
 - Inspect `trace.Events` for split reasons (`tariff_switch`, `charging_to_parking`, `meter_rollback`, etc.).
+
+## Why `internal/`?
+
+`internal/` is intentional in Go. It marks packages as private implementation details that cannot be imported by other modules. This lets the implementation evolve safely.
+
+If you use this repository as a dependency, import only `pkg/segengine`.
+
+## Scope
+
+Included:
+
+- segmentation and charging-period construction
+- deterministic behavior and hardening for missing telemetry, rollback, and event overflow
+
+Excluded in current phase:
+
+- pricing/cost computation (VAT/rounding/step-size billing)
+- payment/invoicing flows
 
 ## Tests
 
@@ -75,15 +105,3 @@ Fixture regression assets:
 
 - inputs: `testdata/fixtures/*.json`
 - expected outputs: `testdata/expected/*.json`
-
-## Scope
-
-Included:
-
-- segmentation and charging-period construction
-- deterministic behavior and hardening for missing telemetry, rollback, and event overflow
-
-Excluded in current phase:
-
-- pricing/cost computation (VAT/rounding/step-size billing)
-- payment/invoicing flows

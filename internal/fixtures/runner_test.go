@@ -11,10 +11,10 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/ocpi/ocpi/internal/boundaries"
-	"github.com/ocpi/ocpi/internal/breakpoints"
-	"github.com/ocpi/ocpi/internal/periods"
-	"github.com/ocpi/ocpi/internal/tariffs"
+	"github.com/jaouadou/ocpi-tariff-module/internal/boundaries"
+	"github.com/jaouadou/ocpi-tariff-module/internal/breakpoints"
+	"github.com/jaouadou/ocpi-tariff-module/internal/periods"
+	"github.com/jaouadou/ocpi-tariff-module/internal/tariffs"
 	"github.com/stretchr/testify/require"
 )
 

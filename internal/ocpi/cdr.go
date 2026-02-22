@@ -3,7 +3,7 @@ package ocpi
 import (
 	"time"
 
-	"github.com/ocpi/ocpi/internal/periods"
+	"github.com/jaouadou/ocpi-tariff-module/internal/periods"
 )
 
 type CDR struct {
