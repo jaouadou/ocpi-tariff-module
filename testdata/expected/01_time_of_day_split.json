@@ -1,0 +1,30 @@
+{
+  "periods": [
+    {
+      "start": "2026-02-22T16:30:00Z",
+      "dimensions": [
+        {
+          "type": "ENERGY",
+          "volume": 2
+        },
+        {
+          "type": "TIME",
+          "volume": 0.5
+        }
+      ]
+    },
+    {
+      "start": "2026-02-22T17:00:00Z",
+      "dimensions": [
+        {
+          "type": "ENERGY",
+          "volume": 6
+        },
+        {
+          "type": "TIME",
+          "volume": 1.5
+        }
+      ]
+    }
+  ]
+}

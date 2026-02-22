@@ -1,0 +1,40 @@
+{
+  "name": "17:00 time-of-day tariff change split",
+  "description": "Session from 16:30 to 18:30 with tariff changing at 17:00",
+  "start_utc": "2026-02-22T16:30:00Z",
+  "end_utc": "2026-02-22T18:30:00Z",
+  "timezone": "UTC",
+  "tariff": {
+    "elements": [
+      {
+        "id": "day-rate",
+        "price_components": [
+          {"type": "ENERGY"},
+          {"type": "TIME"}
+        ],
+        "restrictions": {
+          "start_time": "00:00",
+          "end_time": "17:00"
+        }
+      },
+      {
+        "id": "evening-rate",
+        "price_components": [
+          {"type": "ENERGY"},
+          {"type": "TIME"}
+        ],
+        "restrictions": {
+          "start_time": "17:00",
+          "end_time": "24:00"
+        }
+      }
+    ]
+  },
+  "meter_samples": [
+    {"at": "2026-02-22T16:30:00Z", "total_kwh": 0},
+    {"at": "2026-02-22T17:00:00Z", "total_kwh": 2},
+    {"at": "2026-02-22T17:30:00Z", "total_kwh": 4},
+    {"at": "2026-02-22T18:00:00Z", "total_kwh": 6},
+    {"at": "2026-02-22T18:30:00Z", "total_kwh": 8}
+  ]
+}

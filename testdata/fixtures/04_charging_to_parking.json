@@ -1,0 +1,26 @@
+{
+  "name": "charging to parking transition",
+  "description": "Session where energy stops increasing, causing parking period split",
+  "start_utc": "2026-02-22T09:00:00Z",
+  "end_utc": "2026-02-22T09:45:00Z",
+  "timezone": "UTC",
+  "tariff": {
+    "elements": [
+      {
+        "id": "standard",
+        "price_components": [
+          {"type": "ENERGY"},
+          {"type": "TIME"},
+          {"type": "PARKING_TIME"}
+        ]
+      }
+    ]
+  },
+  "meter_samples": [
+    {"at": "2026-02-22T09:00:00Z", "total_kwh": 0},
+    {"at": "2026-02-22T09:15:00Z", "total_kwh": 2},
+    {"at": "2026-02-22T09:30:00Z", "total_kwh": 3.5},
+    {"at": "2026-02-22T09:30:00Z", "total_kwh": 3.5},
+    {"at": "2026-02-22T09:45:00Z", "total_kwh": 3.5}
+  ]
+}

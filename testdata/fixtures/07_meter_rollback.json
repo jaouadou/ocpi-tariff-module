@@ -1,0 +1,25 @@
+{
+  "name": "meter rollback anomaly",
+  "description": "Meter total drops mid-session; negative delta is clamped and charging resumes later",
+  "start_utc": "2026-02-22T15:00:00Z",
+  "end_utc": "2026-02-22T15:30:00Z",
+  "timezone": "UTC",
+  "tariff": {
+    "elements": [
+      {
+        "id": "standard",
+        "price_components": [
+          {"type": "ENERGY"},
+          {"type": "TIME"},
+          {"type": "PARKING_TIME"}
+        ]
+      }
+    ]
+  },
+  "meter_samples": [
+    {"at": "2026-02-22T15:00:00Z", "total_kwh": 100},
+    {"at": "2026-02-22T15:10:00Z", "total_kwh": 101},
+    {"at": "2026-02-22T15:20:00Z", "total_kwh": 100.5},
+    {"at": "2026-02-22T15:30:00Z", "total_kwh": 102}
+  ]
+}

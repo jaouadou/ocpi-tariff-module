@@ -1,0 +1,26 @@
+{
+  "periods": [
+    {
+      "start": "2026-02-22T09:00:00Z",
+      "dimensions": [
+        {
+          "type": "ENERGY",
+          "volume": 3.5
+        },
+        {
+          "type": "TIME",
+          "volume": 0.5
+        }
+      ]
+    },
+    {
+      "start": "2026-02-22T09:30:00Z",
+      "dimensions": [
+        {
+          "type": "PARKING_TIME",
+          "volume": 0.25
+        }
+      ]
+    }
+  ]
+}

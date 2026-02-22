@@ -1,0 +1,37 @@
+{
+  "name": "max_power band switch",
+  "description": "Session with power crossing 7kW threshold causing tariff element switch",
+  "start_utc": "2026-02-22T14:00:00Z",
+  "end_utc": "2026-02-22T14:30:00Z",
+  "timezone": "UTC",
+  "tariff": {
+    "elements": [
+      {
+        "id": "low-power",
+        "price_components": [
+          {"type": "ENERGY"},
+          {"type": "TIME"}
+        ],
+        "restrictions": {
+          "max_power_kw": 7
+        }
+      },
+      {
+        "id": "high-power",
+        "price_components": [
+          {"type": "ENERGY"},
+          {"type": "TIME"}
+        ]
+      }
+    ]
+  },
+  "meter_samples": [
+    {"at": "2026-02-22T14:00:00Z", "total_kwh": 0},
+    {"at": "2026-02-22T14:15:00Z", "total_kwh": 1.5},
+    {"at": "2026-02-22T14:30:00Z", "total_kwh": 4}
+  ],
+  "power_samples": [
+    {"at": "2026-02-22T14:00:00Z", "power_kw": 6},
+    {"at": "2026-02-22T14:15:00Z", "power_kw": 8}
+  ]
+}
