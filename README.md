@@ -1,10 +1,8 @@
-# OCPI Tariff Module: Segmentation Engine
-
-Module path: `github.com/jaouadou/ocpi-tariff-module`
+# OCPI Tariff Module: Segmentation Service
 
 Incremental OCPI 2.2.1 charging-period segmentation engine.
 
-This project converts session telemetry and tariff restrictions into deterministic, ordered charging periods. It supports real-time Session-style projection and end-of-session sealed CDR finalization.
+A service that converts session telemetry and tariff restrictions into deterministic, ordered charging periods. It supports real-time Session-style projection and end-of-session sealed CDR finalization.
 
 ## Architecture
 
@@ -72,12 +70,6 @@ Trace mode:
 
 - Pass `trace := &segengine.Trace{}` into `AccumulateWithTrace`.
 - Inspect `trace.Events` for split reasons (`tariff_switch`, `charging_to_parking`, `meter_rollback`, etc.).
-
-## Why `internal/`?
-
-`internal/` is intentional in Go. It marks packages as private implementation details that cannot be imported by other modules. This lets the implementation evolve safely.
-
-If you use this repository as a dependency, import only `pkg/segengine`.
 
 ## Scope
 
