@@ -8,6 +8,7 @@
 # Go build/test artifacts
 bin/
 dist/
+segengine-api
 *.test
 *.out
 coverage.out
