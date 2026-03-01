@@ -25,8 +25,8 @@ A standalone HTTP service exposing the segmentation engine over JSON HTTP. State
 ### Build and Run
 
 ```bash
-go build ./cmd/segengine-api
-./segengine-api --listen 127.0.0.1:8080
+go build -o bin/segengine-api ./cmd/segengine-api
+./bin/segengine-api --listen 127.0.0.1:8080
 ```
 
 ### curl Walkthrough
