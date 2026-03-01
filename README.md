@@ -134,7 +134,6 @@ Primary entrypoints (public):
 
 - `segengine.Accumulate(...)`
 - `segengine.AccumulateWithTrace(...)`
-- `segengine.NewSessionProjector(...)`
 - `segengine.NewFinalizer()`
 
 Import:
