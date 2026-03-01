@@ -168,7 +168,7 @@ func (s *Server) finalizeSessionSnapshot(snapshot SessionSnapshot) (segengine.CD
 		return segengine.CDR{}, errors.New("session not ended")
 	}
 
-	periods, err := computePeriods(snapshot, snapshot.EndUTC.UTC(), false)
+	periods, _, err := computePeriods(snapshot, snapshot.EndUTC.UTC(), false)
 	if err != nil {
 		return segengine.CDR{}, err
 	}

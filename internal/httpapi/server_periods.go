@@ -58,43 +58,22 @@ func (s *Server) queryPeriodsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if includeTrace {
-		trace := &segengine.Trace{}
-		periods, err := segengine.AccumulateWithTrace(
-			snapshot.StartUTC,
-			effectiveEndUTC,
-			snapshot.Tariff,
-			normalizeMeterSamples(snapshot.MeterSamples),
-			snapshot.PowerSamples,
-			snapshot.CurrentSamples,
-			collectCalendarBoundaries(snapshot.StartUTC, effectiveEndUTC, snapshot.Location, snapshot.Tariff),
-			collectEnergyThresholds(snapshot.Tariff),
-			trace,
-		)
-		if err != nil {
-			s.writeError(w, http.StatusBadRequest, "periods_unavailable", err.Error())
-			return
-		}
-
-		periodsResponsePayload.Periods = toPeriodsResponse(periods)
-		periodsResponsePayload.Trace = &traceResponse{Events: toTraceEventsResponse(trace.Events)}
-		s.writeJSON(w, http.StatusOK, periodsResponsePayload)
-		return
-	}
-
-	periods, err := computePeriods(snapshot, effectiveEndUTC, false)
+	periods, trace, err := computePeriods(snapshot, effectiveEndUTC, includeTrace)
 	if err != nil {
 		s.writeError(w, http.StatusBadRequest, "periods_unavailable", err.Error())
 		return
 	}
 
 	periodsResponsePayload.Periods = toPeriodsResponse(periods)
+	if includeTrace {
+		periodsResponsePayload.Trace = &traceResponse{Events: toTraceEventsResponse(trace.Events)}
+	}
 	s.writeJSON(w, http.StatusOK, periodsResponsePayload)
 }
 
-func computePeriods(snapshot SessionSnapshot, effectiveEndUTC time.Time, includeTrace bool) ([]segengine.ChargingPeriod, error) {
+func computePeriods(snapshot SessionSnapshot, effectiveEndUTC time.Time, includeTrace bool) ([]segengine.ChargingPeriod, *segengine.Trace, error) {
 	if !snapshot.StartUTC.Before(effectiveEndUTC) {
-		return []segengine.ChargingPeriod{}, nil
+		return []segengine.ChargingPeriod{}, nil, nil
 	}
 
 	normalizedMeter := normalizeMeterSamples(snapshot.MeterSamples)
@@ -103,7 +82,7 @@ func computePeriods(snapshot SessionSnapshot, effectiveEndUTC time.Time, include
 
 	if includeTrace {
 		trace := &segengine.Trace{}
-		return segengine.AccumulateWithTrace(
+		periods, err := segengine.AccumulateWithTrace(
 			snapshot.StartUTC,
 			effectiveEndUTC,
 			snapshot.Tariff,
@@ -114,9 +93,10 @@ func computePeriods(snapshot SessionSnapshot, effectiveEndUTC time.Time, include
 			thresholds,
 			trace,
 		)
+		return periods, trace, err
 	}
 
-	return segengine.Accumulate(
+	periods, err := segengine.Accumulate(
 		snapshot.StartUTC,
 		effectiveEndUTC,
 		snapshot.Tariff,
@@ -126,6 +106,7 @@ func computePeriods(snapshot SessionSnapshot, effectiveEndUTC time.Time, include
 		calendarBoundaries,
 		thresholds,
 	)
+	return periods, nil, err
 }
 
 func parseTraceParam(raw string) (bool, error) {
