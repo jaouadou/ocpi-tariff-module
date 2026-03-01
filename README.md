@@ -105,7 +105,6 @@ Core pipeline:
 
 Implementation packages:
 
-- `internal/events/` - deterministic event store, dedupe, watermark, quarantine/backpressure
 - `internal/tariffs/` - TariffRestrictions matching and TariffElement selection
 - `internal/boundaries/` - timezone-aware calendar boundaries
 - `internal/breakpoints/` - interpolation and breakpoint helpers
@@ -149,7 +148,7 @@ Typical flow:
 1. Build tariff and telemetry slices.
 2. Compute calendar boundaries and energy thresholds.
 3. Call `segengine.Accumulate(...)`.
-4. Optionally project Session updates and finalize CDR when watermark passes session end.
+4. Optionally project Session updates and finalize CDR after session end.
 
 Trace mode:
 

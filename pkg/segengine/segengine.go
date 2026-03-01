@@ -5,7 +5,6 @@ import (
 
 	"github.com/jaouadou/ocpi-tariff-module/internal/boundaries"
 	"github.com/jaouadou/ocpi-tariff-module/internal/breakpoints"
-	"github.com/jaouadou/ocpi-tariff-module/internal/events"
 	iocpi "github.com/jaouadou/ocpi-tariff-module/internal/ocpi"
 	"github.com/jaouadou/ocpi-tariff-module/internal/periods"
 	"github.com/jaouadou/ocpi-tariff-module/internal/tariffs"
@@ -40,24 +39,8 @@ type MockSessionReceiver = iocpi.MockSessionReceiver
 type CDR = iocpi.CDR
 type Finalizer = iocpi.Finalizer
 
-type Event = events.Event
-type EventType = events.EventType
-type EventStore = events.Store
-
-func Matches(r TariffRestrictions, snap Snapshot) bool {
-	return tariffs.Matches(r, snap)
-}
-
-func SelectActiveElements(t Tariff, snap Snapshot) map[TariffDimensionType]TariffElement {
-	return tariffs.SelectActiveElements(t, snap)
-}
-
 func CalendarBoundaries(startUTC, endUTC time.Time, loc *time.Location, r TariffRestrictionsCalendar) []time.Time {
 	return boundaries.CalendarBoundaries(startUTC, endUTC, loc, r)
-}
-
-func BuildBreakpoints(startUTC, endUTC time.Time, meter []MeterSample, calendar []time.Time, thresholds []EnergyThreshold) []time.Time {
-	return breakpoints.Breakpoints(startUTC, endUTC, meter, calendar, thresholds)
 }
 
 func Accumulate(startUTC, endUTC time.Time, tariff Tariff, meter []MeterSample, power []PowerSample, current []CurrentSample, calendar []time.Time, thresholds []EnergyThreshold) ([]ChargingPeriod, error) {
@@ -72,14 +55,6 @@ func NewSessionProjector(receiver SessionReceiver) *SessionProjector {
 	return iocpi.NewSessionProjector(receiver)
 }
 
-func NewMockSessionReceiver() *MockSessionReceiver {
-	return iocpi.NewMockSessionReceiver()
-}
-
 func NewFinalizer() *Finalizer {
 	return iocpi.NewFinalizer()
-}
-
-func NewEventStore() *EventStore {
-	return events.NewStore()
 }
