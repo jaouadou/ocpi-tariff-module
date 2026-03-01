@@ -89,8 +89,8 @@ type ExpectedDimension struct {
 }
 
 func TestFixtures(t *testing.T) {
-	fixturesDir := "../../testdata/fixtures"
-	expectedDir := "../../testdata/expected"
+	fixturesDir := "./testdata/fixtures"
+	expectedDir := "./testdata/expected"
 
 	// Discover fixture files
 	files, err := filepath.Glob(filepath.Join(fixturesDir, "*.json"))
