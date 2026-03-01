@@ -1,6 +1,7 @@
 package tariffs
 
 import (
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -55,13 +56,7 @@ func Matches(r TariffRestrictions, snap Snapshot) bool {
 	}
 
 	if len(r.DayOfWeek) > 0 {
-		matchedDay := false
-		for _, day := range r.DayOfWeek {
-			if local.Weekday() == day {
-				matchedDay = true
-				break
-			}
-		}
+		matchedDay := slices.Contains(r.DayOfWeek, local.Weekday())
 		if !matchedDay {
 			return false
 		}

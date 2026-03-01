@@ -1,8 +1,6 @@
 package httpapi
 
 import (
-	"crypto/rand"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,6 +10,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/google/uuid"
 
 	segengine "github.com/jaouadou/ocpi-tariff-module/pkg/segengine"
 )
@@ -56,6 +56,7 @@ func (s *Server) versionHandler(w http.ResponseWriter, _ *http.Request) {
 
 func (s *Server) createSessionHandler(w http.ResponseWriter, r *http.Request) {
 	var req createSessionRequest
+
 	if err := s.readJSON(w, r, &req); err != nil {
 		s.writeError(w, http.StatusBadRequest, "invalid_json", err.Error())
 		return
@@ -79,11 +80,20 @@ func (s *Server) createSessionHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sessionID := strings.TrimSpace(req.SessionID)
-	if sessionID == "" {
-		sessionID, err = generateUUIDv4()
+	sessionIDStr := strings.TrimSpace(req.SessionID)
+	var sessionID uuid.UUID
+
+	// TODO: Check ig the session id should be provided and we don't forge an internal one.
+	if sessionIDStr == "" {
+		sessionID, err = uuid.NewRandom()
 		if err != nil {
 			s.writeError(w, http.StatusInternalServerError, "internal_error", "failed to generate session_id")
+			return
+		}
+	} else {
+		sessionID, err = uuid.Parse(sessionIDStr)
+		if err != nil {
+			s.writeError(w, http.StatusBadRequest, "invalid_session_id", "session_id must be a valid UUID")
 			return
 		}
 	}
@@ -109,141 +119,122 @@ func (s *Server) createSessionHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.writeJSON(w, http.StatusCreated, createSessionResponse{
-		SessionID: sessionID,
+		SessionID: sessionID.String(),
 		StartUTC:  state.StartUTC.Format(time.RFC3339),
 		Timezone:  req.Timezone,
 	})
 }
 
+type appendSamplesHandlerOptions[RawSample identifiedRawSample, TargetSample any] struct {
+	newRequest        func() any
+	extractSamples    func(any) []RawSample
+	toTarget          func(RawSample, time.Time) TargetSample
+	appendToStore     func(uuid.UUID, []identifiedSample[TargetSample]) (accepted, duplicates int, err error)
+	appendFailureText string
+}
+
 func (s *Server) appendMeterSamplesHandler(w http.ResponseWriter, r *http.Request) {
-	pathID := r.PathValue("id")
-
-	var req meterSamplesRequest
-	if err := s.readJSON(w, r, &req); err != nil {
-		s.writeError(w, http.StatusBadRequest, "invalid_json", err.Error())
-		return
+	options := appendSamplesHandlerOptions[meterSampleRequest, segengine.MeterSample]{
+		newRequest: func() any {
+			return &meterSamplesRequest{}
+		},
+		extractSamples: func(req any) []meterSampleRequest {
+			return req.(*meterSamplesRequest).Samples
+		},
+		toTarget: func(sample meterSampleRequest, at time.Time) segengine.MeterSample {
+			return segengine.MeterSample{At: at.UTC(), TotalKWh: sample.TotalKWh}
+		},
+		appendToStore:     s.store.AppendMeterSamples,
+		appendFailureText: "failed to append meter samples",
 	}
 
-	samples := make([]identifiedMeterSample, 0, len(req.Samples))
-	for i, rawSample := range req.Samples {
-		sampleID := strings.TrimSpace(rawSample.ID)
-		if sampleID == "" {
-			s.writeError(w, http.StatusBadRequest, "invalid_sample_id", fmt.Sprintf("samples[%d].id must be non-empty", i))
-			return
-		}
-
-		at, err := time.Parse(time.RFC3339, rawSample.At)
-		if err != nil {
-			s.writeError(w, http.StatusBadRequest, "invalid_sample_timestamp", fmt.Sprintf("samples[%d].at must be RFC3339", i))
-			return
-		}
-
-		samples = append(samples, identifiedMeterSample{
-			id: sampleID,
-			sample: segengine.MeterSample{
-				At:       at.UTC(),
-				TotalKWh: rawSample.TotalKWh,
-			},
-		})
-	}
-
-	accepted, duplicates, err := s.store.AppendMeterSamples(pathID, samples)
-	if err != nil {
-		if errors.Is(err, ErrSessionNotFound) {
-			s.writeError(w, http.StatusNotFound, "session_not_found", "session not found")
-			return
-		}
-		s.writeError(w, http.StatusInternalServerError, "internal_error", "failed to append meter samples")
-		return
-	}
-
-	s.writeJSON(w, http.StatusAccepted, ingestSamplesResponse{Accepted: accepted, Duplicates: duplicates})
+	handleAppendSamples(s, w, r, options)
 }
 
 func (s *Server) appendPowerSamplesHandler(w http.ResponseWriter, r *http.Request) {
-	pathID := r.PathValue("id")
-
-	var req powerSamplesRequest
-	if err := s.readJSON(w, r, &req); err != nil {
-		s.writeError(w, http.StatusBadRequest, "invalid_json", err.Error())
-		return
+	options := appendSamplesHandlerOptions[powerSampleRequest, segengine.PowerSample]{
+		newRequest: func() any {
+			return &powerSamplesRequest{}
+		},
+		extractSamples: func(req any) []powerSampleRequest {
+			return req.(*powerSamplesRequest).Samples
+		},
+		toTarget: func(sample powerSampleRequest, at time.Time) segengine.PowerSample {
+			return segengine.PowerSample{At: at.UTC(), PowerKW: sample.PowerKW}
+		},
+		appendToStore:     s.store.AppendPowerSamples,
+		appendFailureText: "failed to append power samples",
 	}
 
-	samples := make([]identifiedPowerSample, 0, len(req.Samples))
-	for i, rawSample := range req.Samples {
-		sampleID := strings.TrimSpace(rawSample.ID)
-		if sampleID == "" {
-			s.writeError(w, http.StatusBadRequest, "invalid_sample_id", fmt.Sprintf("samples[%d].id must be non-empty", i))
-			return
-		}
-
-		at, err := time.Parse(time.RFC3339, rawSample.At)
-		if err != nil {
-			s.writeError(w, http.StatusBadRequest, "invalid_sample_timestamp", fmt.Sprintf("samples[%d].at must be RFC3339", i))
-			return
-		}
-
-		samples = append(samples, identifiedPowerSample{
-			id: sampleID,
-			sample: segengine.PowerSample{
-				At:      at.UTC(),
-				PowerKW: rawSample.PowerKW,
-			},
-		})
-	}
-
-	accepted, duplicates, err := s.store.AppendPowerSamples(pathID, samples)
-	if err != nil {
-		if errors.Is(err, ErrSessionNotFound) {
-			s.writeError(w, http.StatusNotFound, "session_not_found", "session not found")
-			return
-		}
-		s.writeError(w, http.StatusInternalServerError, "internal_error", "failed to append power samples")
-		return
-	}
-
-	s.writeJSON(w, http.StatusAccepted, ingestSamplesResponse{Accepted: accepted, Duplicates: duplicates})
+	handleAppendSamples(s, w, r, options)
 }
 
 func (s *Server) appendCurrentSamplesHandler(w http.ResponseWriter, r *http.Request) {
-	pathID := r.PathValue("id")
+	options := appendSamplesHandlerOptions[currentSampleRequest, segengine.CurrentSample]{
+		newRequest: func() any {
+			return &currentSamplesRequest{}
+		},
+		extractSamples: func(req any) []currentSampleRequest {
+			return req.(*currentSamplesRequest).Samples
+		},
+		toTarget: func(sample currentSampleRequest, at time.Time) segengine.CurrentSample {
+			return segengine.CurrentSample{At: at.UTC(), CurrentA: sample.CurrentA}
+		},
+		appendToStore:     s.store.AppendCurrentSamples,
+		appendFailureText: "failed to append current samples",
+	}
 
-	var req currentSamplesRequest
-	if err := s.readJSON(w, r, &req); err != nil {
-		s.writeError(w, http.StatusBadRequest, "invalid_json", err.Error())
+	handleAppendSamples(s, w, r, options)
+}
+
+type identifiedRawSample interface {
+	sampleID() string
+	sampleAt() string
+}
+
+func handleAppendSamples[RawSample identifiedRawSample, TargetSample any](s *Server, w http.ResponseWriter, r *http.Request, options appendSamplesHandlerOptions[RawSample, TargetSample]) {
+	pathID := r.PathValue("id")
+	sessionID, err := uuid.Parse(pathID)
+	if err != nil {
+		s.writeError(w, http.StatusBadRequest, "invalid_session_id", err.Error())
 		return
 	}
 
-	samples := make([]identifiedCurrentSample, 0, len(req.Samples))
-	for i, rawSample := range req.Samples {
-		sampleID := strings.TrimSpace(rawSample.ID)
-		if sampleID == "" {
+	req := options.newRequest()
+	if err := s.readJSON(w, r, req); err != nil {
+		s.writeError(w, http.StatusBadRequest, "invalid_json", err.Error())
+		return
+	}
+	rawSamples := options.extractSamples(req)
+
+	samples := make([]identifiedSample[TargetSample], 0, len(rawSamples))
+	for i, rawSample := range rawSamples {
+		id := strings.TrimSpace(rawSample.sampleID())
+		if id == "" {
 			s.writeError(w, http.StatusBadRequest, "invalid_sample_id", fmt.Sprintf("samples[%d].id must be non-empty", i))
 			return
 		}
 
-		at, err := time.Parse(time.RFC3339, rawSample.At)
+		parsedAt, err := time.Parse(time.RFC3339, rawSample.sampleAt())
 		if err != nil {
 			s.writeError(w, http.StatusBadRequest, "invalid_sample_timestamp", fmt.Sprintf("samples[%d].at must be RFC3339", i))
 			return
 		}
 
-		samples = append(samples, identifiedCurrentSample{
-			id: sampleID,
-			sample: segengine.CurrentSample{
-				At:       at.UTC(),
-				CurrentA: rawSample.CurrentA,
-			},
+		samples = append(samples, identifiedSample[TargetSample]{
+			id:     id,
+			sample: options.toTarget(rawSample, parsedAt),
 		})
 	}
 
-	accepted, duplicates, err := s.store.AppendCurrentSamples(pathID, samples)
+	accepted, duplicates, err := options.appendToStore(sessionID, samples)
 	if err != nil {
 		if errors.Is(err, ErrSessionNotFound) {
 			s.writeError(w, http.StatusNotFound, "session_not_found", "session not found")
 			return
 		}
-		s.writeError(w, http.StatusInternalServerError, "internal_error", "failed to append current samples")
+
+		s.writeError(w, http.StatusInternalServerError, "internal_error", options.appendFailureText)
 		return
 	}
 
@@ -252,8 +243,13 @@ func (s *Server) appendCurrentSamplesHandler(w http.ResponseWriter, r *http.Requ
 
 func (s *Server) queryPeriodsHandler(w http.ResponseWriter, r *http.Request) {
 	pathID := r.PathValue("id")
+	sessionId, err := uuid.Parse(pathID)
+	if err != nil {
+		s.writeError(w, http.StatusBadRequest, "invalid_session_id", err.Error())
+		return
+	}
 
-	snapshot, err := s.store.SnapshotSession(pathID)
+	snapshot, err := s.store.SnapshotSession(sessionId)
 	if err != nil {
 		if errors.Is(err, ErrSessionNotFound) {
 			s.writeError(w, http.StatusNotFound, "session_not_found", "session not found")
@@ -339,6 +335,11 @@ func (s *Server) queryPeriodsHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) endSessionHandler(w http.ResponseWriter, r *http.Request) {
 	pathID := r.PathValue("id")
+	sessionId, err := uuid.Parse(pathID)
+	if err != nil {
+		s.writeError(w, http.StatusBadRequest, "invalid_session_id", err.Error())
+		return
+	}
 
 	var req endSessionRequest
 	if err := s.readJSON(w, r, &req); err != nil {
@@ -352,16 +353,18 @@ func (s *Server) endSessionHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	snapshot, err := s.store.EndSession(pathID, endUTC.UTC())
+	snapshot, err := s.store.EndSession(sessionId, endUTC.UTC())
 	if err != nil {
 		if errors.Is(err, ErrSessionNotFound) {
 			s.writeError(w, http.StatusNotFound, "session_not_found", "session not found")
 			return
 		}
+
 		if errors.Is(err, ErrSessionAlreadyEnded) {
 			s.writeError(w, http.StatusConflict, "session_already_ended", "session already ended")
 			return
 		}
+
 		s.writeError(w, http.StatusInternalServerError, "internal_error", "failed to end session")
 		return
 	}
@@ -376,8 +379,13 @@ func (s *Server) endSessionHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) getCDRHandler(w http.ResponseWriter, r *http.Request) {
 	pathID := r.PathValue("id")
+	sessionId, err := uuid.Parse(pathID)
+	if err != nil {
+		s.writeError(w, http.StatusBadRequest, "invalid_session_id", err.Error())
+		return
+	}
 
-	snapshot, err := s.store.SnapshotSession(pathID)
+	snapshot, err := s.store.SnapshotSession(sessionId)
 	if err != nil {
 		if errors.Is(err, ErrSessionNotFound) {
 			s.writeError(w, http.StatusNotFound, "session_not_found", "session not found")
@@ -518,14 +526,14 @@ func normalizeMeterSamples(samples []segengine.MeterSample) []segengine.MeterSam
 func collectCalendarBoundaries(startUTC, endUTC time.Time, location *time.Location, tariff segengine.Tariff) []time.Time {
 	set := make(map[int64]time.Time)
 	for _, element := range tariff.Elements {
-		calendar := segengine.TariffRestrictionsCalendar{
+		elementRestrictionsCalendar := segengine.TariffRestrictionsCalendar{
 			StartTime:  element.Restrictions.StartTime,
 			EndTime:    element.Restrictions.EndTime,
 			StartDate:  element.Restrictions.StartDate,
 			EndDate:    element.Restrictions.EndDate,
 			DaysOfWeek: element.Restrictions.DayOfWeek,
 		}
-		for _, boundary := range segengine.CalendarBoundaries(startUTC, endUTC, location, calendar) {
+		for _, boundary := range segengine.CalendarBoundaries(startUTC, endUTC, location, elementRestrictionsCalendar) {
 			set[boundary.UnixNano()] = boundary.UTC()
 		}
 	}
@@ -555,6 +563,7 @@ func collectEnergyThresholds(tariff segengine.Tariff) []segengine.EnergyThreshol
 	return thresholds
 }
 
+// TODO: can use json marshal for this ?
 func toPeriodsResponse(periods []segengine.ChargingPeriod) []chargingPeriodResponse {
 	result := make([]chargingPeriodResponse, 0, len(periods))
 	for _, period := range periods {
@@ -605,27 +614,4 @@ func (s *Server) writeJSON(w http.ResponseWriter, status int, payload any) {
 
 func (s *Server) writeError(w http.ResponseWriter, status int, code, message string) {
 	s.writeJSON(w, status, errorResponse{Error: errorBody{Code: code, Message: message}})
-}
-
-func generateUUIDv4() (string, error) {
-	raw := make([]byte, 16)
-	if _, err := rand.Read(raw); err != nil {
-		return "", fmt.Errorf("read random bytes: %w", err)
-	}
-
-	raw[6] = (raw[6] & 0x0f) | 0x40
-	raw[8] = (raw[8] & 0x3f) | 0x80
-
-	buf := make([]byte, 36)
-	hex.Encode(buf[0:8], raw[0:4])
-	buf[8] = '-'
-	hex.Encode(buf[9:13], raw[4:6])
-	buf[13] = '-'
-	hex.Encode(buf[14:18], raw[6:8])
-	buf[18] = '-'
-	hex.Encode(buf[19:23], raw[8:10])
-	buf[23] = '-'
-	hex.Encode(buf[24:36], raw[10:16])
-
-	return string(buf), nil
 }

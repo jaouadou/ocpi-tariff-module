@@ -11,8 +11,9 @@ const (
 )
 
 type TariffRestrictionsCalendar struct {
-	StartTime  *string
-	EndTime    *string
+	StartTime *string
+	EndTime   *string
+	// TODO: time vs date distinction here ?
 	StartDate  *string
 	EndDate    *string
 	DaysOfWeek []time.Weekday

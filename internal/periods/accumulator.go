@@ -67,9 +67,6 @@ func Accumulate(
 	for i := 1; i < len(boundaries); i++ {
 		a := boundaries[i-1]
 		b := boundaries[i]
-		if !a.Before(b) {
-			continue
-		}
 
 		energyStart, err := totalKWhAt(normalized, a)
 		if err != nil {

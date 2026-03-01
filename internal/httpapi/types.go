@@ -35,6 +35,14 @@ type meterSampleRequest struct {
 	TotalKWh float64 `json:"total_kwh"`
 }
 
+func (s meterSampleRequest) sampleID() string {
+	return s.ID
+}
+
+func (s meterSampleRequest) sampleAt() string {
+	return s.At
+}
+
 type powerSamplesRequest struct {
 	Samples []powerSampleRequest `json:"samples"`
 }
@@ -45,6 +53,14 @@ type powerSampleRequest struct {
 	PowerKW float64 `json:"power_kw"`
 }
 
+func (s powerSampleRequest) sampleID() string {
+	return s.ID
+}
+
+func (s powerSampleRequest) sampleAt() string {
+	return s.At
+}
+
 type currentSamplesRequest struct {
 	Samples []currentSampleRequest `json:"samples"`
 }
@@ -53,6 +69,14 @@ type currentSampleRequest struct {
 	ID       string  `json:"id"`
 	At       string  `json:"at"`
 	CurrentA float64 `json:"current_a"`
+}
+
+func (s currentSampleRequest) sampleID() string {
+	return s.ID
+}
+
+func (s currentSampleRequest) sampleAt() string {
+	return s.At
 }
 
 type endSessionRequest struct {

@@ -52,7 +52,7 @@ func TestCreateSessionDuplicateSessionID(t *testing.T) {
 
 	server := NewServer(NewSessionStore())
 	requestBody := `{
-		"session_id":"session-1",
+		"session_id":"11111111-1111-4111-8111-111111111111",
 		"start_utc":"2026-02-22T10:00:00Z",
 		"timezone":"Europe/Paris",
 		"tariff":{
@@ -97,7 +97,7 @@ func TestAppendMeterSamplesIdempotent(t *testing.T) {
 
 	server := NewServer(NewSessionStore())
 	createSessionRequestBody := `{
-		"session_id":"session-1",
+		"session_id":"11111111-1111-4111-8111-111111111111",
 		"start_utc":"2026-02-22T10:00:00Z",
 		"timezone":"Europe/Paris",
 		"tariff":{
@@ -124,7 +124,7 @@ func TestAppendMeterSamplesIdempotent(t *testing.T) {
 		]
 	}`
 
-	firstReq := httptest.NewRequest(http.MethodPost, "/v1/sessions/session-1/meter-samples", bytes.NewBufferString(ingestRequestBody))
+	firstReq := httptest.NewRequest(http.MethodPost, "/v1/sessions/11111111-1111-4111-8111-111111111111/meter-samples", bytes.NewBufferString(ingestRequestBody))
 	firstRec := httptest.NewRecorder()
 	server.Mux().ServeHTTP(firstRec, firstReq)
 
@@ -141,7 +141,7 @@ func TestAppendMeterSamplesIdempotent(t *testing.T) {
 		t.Fatalf("expected first response accepted=1 duplicates=0, got accepted=%d duplicates=%d", firstResponse.Accepted, firstResponse.Duplicates)
 	}
 
-	secondReq := httptest.NewRequest(http.MethodPost, "/v1/sessions/session-1/meter-samples", bytes.NewBufferString(ingestRequestBody))
+	secondReq := httptest.NewRequest(http.MethodPost, "/v1/sessions/11111111-1111-4111-8111-111111111111/meter-samples", bytes.NewBufferString(ingestRequestBody))
 	secondRec := httptest.NewRecorder()
 	server.Mux().ServeHTTP(secondRec, secondReq)
 
@@ -163,7 +163,7 @@ func TestQueryPeriodsSessionNotFound(t *testing.T) {
 	t.Parallel()
 
 	server := NewServer(NewSessionStore())
-	req := httptest.NewRequest(http.MethodGet, "/v1/sessions/does-not-exist/periods", nil)
+	req := httptest.NewRequest(http.MethodGet, "/v1/sessions/33333333-3333-4333-8333-333333333333/periods", nil)
 	rec := httptest.NewRecorder()
 
 	server.Mux().ServeHTTP(rec, req)
@@ -188,7 +188,7 @@ func TestQueryPeriodsNormalizesMeterAndIncludesTrace(t *testing.T) {
 	server := NewServer(NewSessionStore())
 
 	createSessionBody := `{
-		"session_id":"session-1",
+		"session_id":"11111111-1111-4111-8111-111111111111",
 		"start_utc":"2026-02-22T10:00:00Z",
 		"timezone":"Europe/Paris",
 		"tariff":{
@@ -216,14 +216,14 @@ func TestQueryPeriodsNormalizesMeterAndIncludesTrace(t *testing.T) {
 		]
 	}`
 
-	ingestReq := httptest.NewRequest(http.MethodPost, "/v1/sessions/session-1/meter-samples", bytes.NewBufferString(ingestBody))
+	ingestReq := httptest.NewRequest(http.MethodPost, "/v1/sessions/11111111-1111-4111-8111-111111111111/meter-samples", bytes.NewBufferString(ingestBody))
 	ingestRec := httptest.NewRecorder()
 	server.Mux().ServeHTTP(ingestRec, ingestReq)
 	if ingestRec.Code != http.StatusAccepted {
 		t.Fatalf("expected ingest status %d, got %d", http.StatusAccepted, ingestRec.Code)
 	}
 
-	periodsReq := httptest.NewRequest(http.MethodGet, "/v1/sessions/session-1/periods?trace=1", nil)
+	periodsReq := httptest.NewRequest(http.MethodGet, "/v1/sessions/11111111-1111-4111-8111-111111111111/periods?trace=1", nil)
 	periodsRec := httptest.NewRecorder()
 	server.Mux().ServeHTTP(periodsRec, periodsReq)
 
@@ -268,7 +268,7 @@ func TestEndSessionNotFound(t *testing.T) {
 	t.Parallel()
 
 	server := NewServer(NewSessionStore())
-	req := httptest.NewRequest(http.MethodPost, "/v1/sessions/does-not-exist/end", bytes.NewBufferString(`{"end_utc":"2026-02-22T11:00:00Z"}`))
+	req := httptest.NewRequest(http.MethodPost, "/v1/sessions/33333333-3333-4333-8333-333333333333/end", bytes.NewBufferString(`{"end_utc":"2026-02-22T11:00:00Z"}`))
 	rec := httptest.NewRecorder()
 
 	server.Mux().ServeHTTP(rec, req)
@@ -283,7 +283,7 @@ func TestEndSessionInvalidEndUTC(t *testing.T) {
 
 	server := NewServer(NewSessionStore())
 	createReq := httptest.NewRequest(http.MethodPost, "/v1/sessions", bytes.NewBufferString(`{
-		"session_id":"session-1",
+		"session_id":"11111111-1111-4111-8111-111111111111",
 		"start_utc":"2026-02-22T10:00:00Z",
 		"timezone":"Europe/Paris",
 		"tariff":{"elements":[{"id":"base","price_components":[{"type":"TIME"}],"restrictions":{}}]}
@@ -294,7 +294,7 @@ func TestEndSessionInvalidEndUTC(t *testing.T) {
 		t.Fatalf("expected create status %d, got %d", http.StatusCreated, createRec.Code)
 	}
 
-	req := httptest.NewRequest(http.MethodPost, "/v1/sessions/session-1/end", bytes.NewBufferString(`{"end_utc":"not-a-time"}`))
+	req := httptest.NewRequest(http.MethodPost, "/v1/sessions/11111111-1111-4111-8111-111111111111/end", bytes.NewBufferString(`{"end_utc":"not-a-time"}`))
 	rec := httptest.NewRecorder()
 
 	server.Mux().ServeHTTP(rec, req)
@@ -309,7 +309,7 @@ func TestEndSessionAlreadyEnded(t *testing.T) {
 
 	server := NewServer(NewSessionStore())
 	createReq := httptest.NewRequest(http.MethodPost, "/v1/sessions", bytes.NewBufferString(`{
-		"session_id":"session-1",
+		"session_id":"11111111-1111-4111-8111-111111111111",
 		"start_utc":"2026-02-22T10:00:00Z",
 		"timezone":"Europe/Paris",
 		"tariff":{"elements":[{"id":"base","price_components":[{"type":"ENERGY"}],"restrictions":{}}]}
@@ -320,7 +320,7 @@ func TestEndSessionAlreadyEnded(t *testing.T) {
 		t.Fatalf("expected create status %d, got %d", http.StatusCreated, createRec.Code)
 	}
 
-	ingestReq := httptest.NewRequest(http.MethodPost, "/v1/sessions/session-1/meter-samples", bytes.NewBufferString(`{
+	ingestReq := httptest.NewRequest(http.MethodPost, "/v1/sessions/11111111-1111-4111-8111-111111111111/meter-samples", bytes.NewBufferString(`{
 		"samples":[
 			{"id":"m-1","at":"2026-02-22T10:00:00Z","total_kwh":100.0},
 			{"id":"m-2","at":"2026-02-22T11:00:00Z","total_kwh":101.0}
@@ -332,14 +332,14 @@ func TestEndSessionAlreadyEnded(t *testing.T) {
 		t.Fatalf("expected ingest status %d, got %d", http.StatusAccepted, ingestRec.Code)
 	}
 
-	firstReq := httptest.NewRequest(http.MethodPost, "/v1/sessions/session-1/end", bytes.NewBufferString(`{"end_utc":"2026-02-22T11:00:00Z"}`))
+	firstReq := httptest.NewRequest(http.MethodPost, "/v1/sessions/11111111-1111-4111-8111-111111111111/end", bytes.NewBufferString(`{"end_utc":"2026-02-22T11:00:00Z"}`))
 	firstRec := httptest.NewRecorder()
 	server.Mux().ServeHTTP(firstRec, firstReq)
 	if firstRec.Code != http.StatusOK {
 		t.Fatalf("expected first end status %d, got %d", http.StatusOK, firstRec.Code)
 	}
 
-	secondReq := httptest.NewRequest(http.MethodPost, "/v1/sessions/session-1/end", bytes.NewBufferString(`{"end_utc":"2026-02-22T11:01:00Z"}`))
+	secondReq := httptest.NewRequest(http.MethodPost, "/v1/sessions/11111111-1111-4111-8111-111111111111/end", bytes.NewBufferString(`{"end_utc":"2026-02-22T11:01:00Z"}`))
 	secondRec := httptest.NewRecorder()
 	server.Mux().ServeHTTP(secondRec, secondReq)
 
@@ -353,7 +353,7 @@ func TestGetCDRStatesAndSealedResponse(t *testing.T) {
 
 	server := NewServer(NewSessionStore())
 	createReq := httptest.NewRequest(http.MethodPost, "/v1/sessions", bytes.NewBufferString(`{
-		"session_id":"session-1",
+		"session_id":"11111111-1111-4111-8111-111111111111",
 		"start_utc":"2026-02-22T10:00:00Z",
 		"timezone":"Europe/Paris",
 		"tariff":{
@@ -368,21 +368,21 @@ func TestGetCDRStatesAndSealedResponse(t *testing.T) {
 		t.Fatalf("expected create status %d, got %d", http.StatusCreated, createRec.Code)
 	}
 
-	notEndedReq := httptest.NewRequest(http.MethodGet, "/v1/sessions/session-1/cdr", nil)
+	notEndedReq := httptest.NewRequest(http.MethodGet, "/v1/sessions/11111111-1111-4111-8111-111111111111/cdr", nil)
 	notEndedRec := httptest.NewRecorder()
 	server.Mux().ServeHTTP(notEndedRec, notEndedReq)
 	if notEndedRec.Code != http.StatusConflict {
 		t.Fatalf("expected status %d before end, got %d", http.StatusConflict, notEndedRec.Code)
 	}
 
-	notFoundReq := httptest.NewRequest(http.MethodGet, "/v1/sessions/does-not-exist/cdr", nil)
+	notFoundReq := httptest.NewRequest(http.MethodGet, "/v1/sessions/33333333-3333-4333-8333-333333333333/cdr", nil)
 	notFoundRec := httptest.NewRecorder()
 	server.Mux().ServeHTTP(notFoundRec, notFoundReq)
 	if notFoundRec.Code != http.StatusNotFound {
 		t.Fatalf("expected status %d for unknown session, got %d", http.StatusNotFound, notFoundRec.Code)
 	}
 
-	ingestReq := httptest.NewRequest(http.MethodPost, "/v1/sessions/session-1/meter-samples", bytes.NewBufferString(`{
+	ingestReq := httptest.NewRequest(http.MethodPost, "/v1/sessions/11111111-1111-4111-8111-111111111111/meter-samples", bytes.NewBufferString(`{
 		"samples":[
 			{"id":"m-1","at":"2026-02-22T10:00:00Z","total_kwh":100.0},
 			{"id":"m-2","at":"2026-02-22T11:00:00Z","total_kwh":101.0}
@@ -394,14 +394,14 @@ func TestGetCDRStatesAndSealedResponse(t *testing.T) {
 		t.Fatalf("expected ingest status %d, got %d", http.StatusAccepted, ingestRec.Code)
 	}
 
-	endReq := httptest.NewRequest(http.MethodPost, "/v1/sessions/session-1/end", bytes.NewBufferString(`{"end_utc":"2026-02-22T11:00:00Z"}`))
+	endReq := httptest.NewRequest(http.MethodPost, "/v1/sessions/11111111-1111-4111-8111-111111111111/end", bytes.NewBufferString(`{"end_utc":"2026-02-22T11:00:00Z"}`))
 	endRec := httptest.NewRecorder()
 	server.Mux().ServeHTTP(endRec, endReq)
 	if endRec.Code != http.StatusOK {
 		t.Fatalf("expected end status %d, got %d", http.StatusOK, endRec.Code)
 	}
 
-	firstCDRReq := httptest.NewRequest(http.MethodGet, "/v1/sessions/session-1/cdr", nil)
+	firstCDRReq := httptest.NewRequest(http.MethodGet, "/v1/sessions/11111111-1111-4111-8111-111111111111/cdr", nil)
 	firstCDRRec := httptest.NewRecorder()
 	server.Mux().ServeHTTP(firstCDRRec, firstCDRReq)
 	if firstCDRRec.Code != http.StatusOK {
@@ -413,8 +413,8 @@ func TestGetCDRStatesAndSealedResponse(t *testing.T) {
 		t.Fatalf("decode first cdr response: %v", err)
 	}
 
-	if firstCDR.SessionID != "session-1" {
-		t.Fatalf("expected session_id session-1, got %q", firstCDR.SessionID)
+	if firstCDR.SessionID != "11111111-1111-4111-8111-111111111111" {
+		t.Fatalf("expected session_id 11111111-1111-4111-8111-111111111111, got %q", firstCDR.SessionID)
 	}
 	if firstCDR.StartUTC != "2026-02-22T10:00:00Z" {
 		t.Fatalf("expected start_utc to match session start, got %q", firstCDR.StartUTC)
@@ -429,7 +429,7 @@ func TestGetCDRStatesAndSealedResponse(t *testing.T) {
 		t.Fatal("expected charging_periods to be present")
 	}
 
-	secondCDRReq := httptest.NewRequest(http.MethodGet, "/v1/sessions/session-1/cdr", nil)
+	secondCDRReq := httptest.NewRequest(http.MethodGet, "/v1/sessions/11111111-1111-4111-8111-111111111111/cdr", nil)
 	secondCDRRec := httptest.NewRecorder()
 	server.Mux().ServeHTTP(secondCDRRec, secondCDRReq)
 	if secondCDRRec.Code != http.StatusOK {
@@ -453,7 +453,7 @@ func TestHTTPFlow_Create_Ingest_Periods_End_CDR(t *testing.T) {
 	mux := server.Mux()
 
 	createReq := httptest.NewRequest(http.MethodPost, "/v1/sessions", bytes.NewBufferString(`{
-		"session_id":"flow-session-1",
+		"session_id":"22222222-2222-4222-8222-222222222222",
 		"start_utc":"2026-02-22T10:00:00Z",
 		"timezone":"Europe/Paris",
 		"tariff":{
@@ -473,8 +473,8 @@ func TestHTTPFlow_Create_Ingest_Periods_End_CDR(t *testing.T) {
 	if err := json.Unmarshal(createRec.Body.Bytes(), &createResp); err != nil {
 		t.Fatalf("decode create response: %v", err)
 	}
-	if createResp.SessionID != "flow-session-1" {
-		t.Fatalf("expected session_id flow-session-1, got %q", createResp.SessionID)
+	if createResp.SessionID != "22222222-2222-4222-8222-222222222222" {
+		t.Fatalf("expected session_id 22222222-2222-4222-8222-222222222222, got %q", createResp.SessionID)
 	}
 	if createResp.StartUTC != "2026-02-22T10:00:00Z" {
 		t.Fatalf("expected start_utc 2026-02-22T10:00:00Z, got %q", createResp.StartUTC)
@@ -483,7 +483,7 @@ func TestHTTPFlow_Create_Ingest_Periods_End_CDR(t *testing.T) {
 		t.Fatalf("expected timezone Europe/Paris, got %q", createResp.Timezone)
 	}
 
-	ingestReq := httptest.NewRequest(http.MethodPost, "/v1/sessions/flow-session-1/meter-samples", bytes.NewBufferString(`{
+	ingestReq := httptest.NewRequest(http.MethodPost, "/v1/sessions/22222222-2222-4222-8222-222222222222/meter-samples", bytes.NewBufferString(`{
 		"samples":[
 			{"id":"m-1","at":"2026-02-22T10:00:00Z","total_kwh":100.0},
 			{"id":"m-2","at":"2026-02-22T10:30:00Z","total_kwh":100.5}
@@ -504,7 +504,7 @@ func TestHTTPFlow_Create_Ingest_Periods_End_CDR(t *testing.T) {
 		t.Fatalf("expected first ingest accepted=2 duplicates=0, got accepted=%d duplicates=%d", ingestResp.Accepted, ingestResp.Duplicates)
 	}
 
-	duplicateReq := httptest.NewRequest(http.MethodPost, "/v1/sessions/flow-session-1/meter-samples", bytes.NewBufferString(`{
+	duplicateReq := httptest.NewRequest(http.MethodPost, "/v1/sessions/22222222-2222-4222-8222-222222222222/meter-samples", bytes.NewBufferString(`{
 		"samples":[
 			{"id":"m-2","at":"2026-02-22T10:30:00Z","total_kwh":100.5}
 		]
@@ -524,7 +524,7 @@ func TestHTTPFlow_Create_Ingest_Periods_End_CDR(t *testing.T) {
 		t.Fatalf("expected duplicate ingest accepted=0 duplicates=1, got accepted=%d duplicates=%d", duplicateResp.Accepted, duplicateResp.Duplicates)
 	}
 
-	periodsReq := httptest.NewRequest(http.MethodGet, "/v1/sessions/flow-session-1/periods?as_of_utc=2026-02-22T10:30:00Z&trace=1", nil)
+	periodsReq := httptest.NewRequest(http.MethodGet, "/v1/sessions/22222222-2222-4222-8222-222222222222/periods?as_of_utc=2026-02-22T10:30:00Z&trace=1", nil)
 	periodsRec := httptest.NewRecorder()
 	mux.ServeHTTP(periodsRec, periodsReq)
 
@@ -536,8 +536,8 @@ func TestHTTPFlow_Create_Ingest_Periods_End_CDR(t *testing.T) {
 	if err := json.Unmarshal(periodsRec.Body.Bytes(), &periodsResp); err != nil {
 		t.Fatalf("decode periods response: %v", err)
 	}
-	if periodsResp.SessionID != "flow-session-1" {
-		t.Fatalf("expected periods session_id flow-session-1, got %q", periodsResp.SessionID)
+	if periodsResp.SessionID != "22222222-2222-4222-8222-222222222222" {
+		t.Fatalf("expected periods session_id 22222222-2222-4222-8222-222222222222, got %q", periodsResp.SessionID)
 	}
 	if periodsResp.StartUTC != "2026-02-22T10:00:00Z" {
 		t.Fatalf("expected periods start_utc 2026-02-22T10:00:00Z, got %q", periodsResp.StartUTC)
@@ -552,7 +552,7 @@ func TestHTTPFlow_Create_Ingest_Periods_End_CDR(t *testing.T) {
 		t.Fatal("expected trace.events to be present when trace=1")
 	}
 
-	endReq := httptest.NewRequest(http.MethodPost, "/v1/sessions/flow-session-1/end", bytes.NewBufferString(`{"end_utc":"2026-02-22T10:30:00Z"}`))
+	endReq := httptest.NewRequest(http.MethodPost, "/v1/sessions/22222222-2222-4222-8222-222222222222/end", bytes.NewBufferString(`{"end_utc":"2026-02-22T10:30:00Z"}`))
 	endRec := httptest.NewRecorder()
 	mux.ServeHTTP(endRec, endReq)
 
@@ -564,14 +564,14 @@ func TestHTTPFlow_Create_Ingest_Periods_End_CDR(t *testing.T) {
 	if err := json.Unmarshal(endRec.Body.Bytes(), &endResp); err != nil {
 		t.Fatalf("decode end response: %v", err)
 	}
-	if endResp.SessionID != "flow-session-1" {
-		t.Fatalf("expected end session_id flow-session-1, got %q", endResp.SessionID)
+	if endResp.SessionID != "22222222-2222-4222-8222-222222222222" {
+		t.Fatalf("expected end session_id 22222222-2222-4222-8222-222222222222, got %q", endResp.SessionID)
 	}
 	if endResp.EndUTC != "2026-02-22T10:30:00Z" {
 		t.Fatalf("expected end end_utc 2026-02-22T10:30:00Z, got %q", endResp.EndUTC)
 	}
 
-	cdrReq := httptest.NewRequest(http.MethodGet, "/v1/sessions/flow-session-1/cdr", nil)
+	cdrReq := httptest.NewRequest(http.MethodGet, "/v1/sessions/22222222-2222-4222-8222-222222222222/cdr", nil)
 	cdrRec := httptest.NewRecorder()
 	mux.ServeHTTP(cdrRec, cdrReq)
 
@@ -583,8 +583,8 @@ func TestHTTPFlow_Create_Ingest_Periods_End_CDR(t *testing.T) {
 	if err := json.Unmarshal(cdrRec.Body.Bytes(), &cdrResp); err != nil {
 		t.Fatalf("decode cdr response: %v", err)
 	}
-	if cdrResp.SessionID != "flow-session-1" {
-		t.Fatalf("expected cdr session_id flow-session-1, got %q", cdrResp.SessionID)
+	if cdrResp.SessionID != "22222222-2222-4222-8222-222222222222" {
+		t.Fatalf("expected cdr session_id 22222222-2222-4222-8222-222222222222, got %q", cdrResp.SessionID)
 	}
 	if cdrResp.StartUTC != "2026-02-22T10:00:00Z" {
 		t.Fatalf("expected cdr start_utc 2026-02-22T10:00:00Z, got %q", cdrResp.StartUTC)
